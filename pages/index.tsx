@@ -17,11 +17,11 @@ export default function App() {
 
   function renderContent() {
     return (
-      <div style={{ justifyContent: 'center', alignItems: 'center', display: 'flex', flexWrap: 'wrap' }}>
+      <div style={{ justifyContent: 'center', alignItems: 'center', display: 'flex', flexDirection: 'column' }}>
         <Typography style={{ textAlign: 'start' }} variant="h3" paragraph>
           TensorFlow Practices
         </Typography>
-        <Typography paragraph>
+        <Typography variant='body1' style={{ fontSize: 20 }} paragraph>
           TensorFlow Practices includes some projects using neural networks.<br />
           Select the feature you want to try. Some features are experimental and works on limited environment only.
         </Typography>
@@ -30,8 +30,6 @@ export default function App() {
             {menu.map(item => (
               <ListItem style={{ width: size, height: (isMobile) ? 200 : size / 2, margin: 8 }} key={item.title} button onClick={() => router.push(item.uri)}>
                 <GridListTile style={{ width: size, borderColor: 'gray', borderWidth: 1 }}>
-                  {/* <Typography paragraph>{item.title}</Typography> */}
-                  {/* <Typography paragraph>{item.description}</Typography> */}
                   <img width={size} height={(isMobile) ? 200 : size / 2} />
                   <GridListTileBar title={item.title} subtitle={item.description} />
                 </GridListTile>
