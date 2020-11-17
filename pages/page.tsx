@@ -11,11 +11,11 @@ import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import Header from './Header';
 
-const menu = [{ "title": "Image Classification", "uri": "image-classification" },
-{ "title": "Object detection", "uri": "object-detection" },
-{ "title": "Image Object Detection", "uri": "image-object-detection" },
-{ "title": "Natural Language Q&A", "uri": "natural-language-qa" },
-{ "title": "Toxicity Classification", "uri": "toxicity-classifier" }]
+export const menu = [{ "title": "Image Classification", "uri": "image-classification", "description": "Classifying the image" },
+{ "title": "Object detection", "uri": "object-detection", "description": "Detecting the objects using camera" },
+{ "title": "Image Object Detection", "uri": "image-object-detection", "description": "Detecting the objects from an image" },
+{ "title": "Natural Language Q&A", "uri": "natural-language-qa", "description": "Try look for the answer based on passage" },
+{ "title": "Toxicity Classification", "uri": "toxicity-classifier", "description": "Identifying the toxicity of given sentence" }]
 
 export default function Page({ content, header = <Header /> }) {
     const classes = useStyles();
@@ -65,10 +65,8 @@ export default function Page({ content, header = <Header /> }) {
                 <Divider />
                 <List>
                     {menu.map((item) => (
-                        <ListItem key={item.title} >
-                            <Link href={"/" + item.uri} color="inherit">
-                                <ListItemText primary={item.title} />
-                            </Link>
+                        <ListItem key={item.title} button onClick={() => router.push(item.uri)}>
+                            <ListItemText primary={item.title} />
                         </ListItem>
                     ))}
                 </List>

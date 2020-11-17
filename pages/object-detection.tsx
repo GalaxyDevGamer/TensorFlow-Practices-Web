@@ -1,13 +1,13 @@
 import * as cocossd from '@tensorflow-models/coco-ssd'
 import * as tfjs from '@tensorflow/tfjs'
-import * as webgl from '@tensorflow/tfjs-backend-webgl'
+import '@tensorflow/tfjs-backend-webgl'
 import { Button, CircularProgress, MenuItem, Select, Typography } from "@material-ui/core";
 import { useEffect, useState } from "react";
 import Page from "./page";
 import { isMobile } from 'react-device-detect'
 
 export default function ObjectDetection() {
-    const [cocoSsd, setModel] = useState(null)
+    const [model, setModel] = useState(null)
     const [webcam, setWebcam] = useState(null)
     const [webcamOn, setWebcamIsOn] = useState(false)
     const [size, setSize] = useState(0)
@@ -15,16 +15,19 @@ export default function ObjectDetection() {
     const [selectedCamera, setCamera] = useState("select")
     const [navigator, setNavigator] = useState(null)
     const [cameraOn, setCameraIsOn] = useState(false)
+    const [contentWidth, setContentWidth] = useState(0)
     var children = []
     var localStream
 
     useEffect(() => {
         setSize(window.innerWidth * 0.8)
         setNavigator(window.navigator)
+        setContentWidth(window.innerWidth * 0.9)
         load()
     }, [])
 
     const load = async () => {
+        tfjs.setBackend('webgl')
         setModel(await cocossd.load({ base: 'mobilenet_v2' }))
     }
 
@@ -82,7 +85,7 @@ export default function ObjectDetection() {
             if (webcam) {
                 const img = await webcam.capture();
                 if (img) {
-                    await cocoSsd.detect(img).then(predictions => {
+                    await model.detect(img).then(predictions => {
                         for (let i = 0; i < children.length; i++) {
                             document.getElementById("liveView").removeChild(children[i]);
                         }
@@ -116,7 +119,7 @@ export default function ObjectDetection() {
     async function cameraPredict() {
         while (cameraOn) {
             if ((document.getElementById('webcam') as HTMLVideoElement).readyState === 4) {
-                await cocoSsd.detect(document.getElementById('webcam') as HTMLVideoElement).then(predictions => {
+                await model.detect(document.getElementById('webcam') as HTMLVideoElement).then(predictions => {
                     for (let i = 0; i < children.length; i++) {
                         document.getElementById("liveView").removeChild(children[i]);
                     }
@@ -144,74 +147,74 @@ export default function ObjectDetection() {
         }
     }
 
-    function renderContent() {
-        if (cocoSsd) {
-            return <div>
-                <Typography variant="h3">
-                    Object Detection
-                    </Typography><br />
-                <div id="liveView" style={{ position: 'relative', alignItems: 'center', justifyContent: 'center', display: 'flex' }}>
-                    <video style={{ display: 'block' }} autoPlay playsInline muted id="webcam" width={size} height={size / 2}></video>
-                </div><br />
-                <Typography variant='h6'>
-                    Camera options
-                </Typography>
-                <Typography>
-                    Webcam (Desktop only)
-                </Typography>
-                <Button variant="outlined" color={(webcamOn) ? "secondary" : "primary"} onClick={async () => {
-                    if (webcamOn) {
-                        await webcam.stop()
-                        setWebcamIsOn(false)
-                        for (let i = 0; i < children.length; i++) {
-                            document.getElementById("liveView").removeChild(children[i]);
-                        }
-                        children.splice(0)
-                    } else {
-                        setWebcam(await tfjs.data.webcam(document.getElementById('webcam') as HTMLVideoElement))
-                        setWebcamIsOn(true)
-                    }
-                }}>
-                    {(webcamOn) ? 'Stop' : 'Start'}
-                </Button><br /><br />
-                <Typography>
-                    Other cameras (Experimental and works on limited environment only)
-                </Typography>
-                <Select value={selectedCamera} onChange={e => setCamera(e.target.value as string)}>
-                    <MenuItem value={"select"}>Supported Cameras</MenuItem>
-                    {cameras.map(camera => (
-                        <MenuItem value={camera.deviceId} key={camera.deviceId}>{camera.label}</MenuItem>
-                    ))}
-                </Select>
-                <Button variant='outlined' onClick={() => {
-                    getCameras()
-                }}>
-                    Look for cameras
-                </Button><br />
-                <Button variant="outlined" onClick={() => {
-                    if (cameraOn) {
-                        setCameraIsOn(false)
-                        for (let i = 0; i < children.length; i++) {
-                            document.getElementById("liveView").removeChild(children[i]);
-                        }
-                        children.splice(0)
-                        stopStream()
-                    } else {
-                        startStream()
-                    }
-                }}>
-                    {(cameraOn) ? 'Stop' : 'Start'}
-                </Button><br />
+    function buttonContent(flag: boolean) {
+        if (!model)
+            return <CircularProgress />
+        if (flag)
+            return <Typography>Stop</Typography>
+        else
+            return <Typography>Start</Typography>
+    }
 
-            </div>
-        } else {
-            return <div>
-                <Typography variant="h3">
-                    Object Detection
-                </Typography><br />
-                <CircularProgress />
-            </div>
-        }
+    function renderContent() {
+        return <div style={{ width: contentWidth, display: 'flex', flexDirection: 'column' }}>
+            <Typography variant="h3">
+                Object Detection
+                    </Typography><br />
+            <div id="liveView" style={{ position: 'relative', alignItems: 'center', justifyContent: 'center', display: 'flex' }}>
+                <video style={{ display: 'block' }} autoPlay playsInline muted id="webcam" width={size} height={size / 2}></video>
+            </div><br />
+            <Typography variant='h6'>
+                Camera options
+                </Typography>
+            <Typography>
+                Webcam (Desktop only)
+                </Typography>
+            <Button variant="outlined" disabled={(model) ? false : true} color={(webcamOn) ? "secondary" : "primary"} onClick={async () => {
+                if (webcamOn) {
+                    await webcam.stop()
+                    setWebcamIsOn(false)
+                    for (let i = 0; i < children.length; i++) {
+                        document.getElementById("liveView").removeChild(children[i]);
+                    }
+                    children.splice(0)
+                } else {
+                    setWebcam(await tfjs.data.webcam(document.getElementById('webcam') as HTMLVideoElement))
+                    setWebcamIsOn(true)
+                }
+            }}>
+                {buttonContent(webcamOn)}
+            </Button><br /><br />
+            <Typography>
+                Other cameras (Experimental and works on limited environment only)
+                </Typography>
+            <Select value={selectedCamera} onChange={e => setCamera(e.target.value as string)}>
+                <MenuItem value={"select"}>Supported Cameras</MenuItem>
+                {cameras.map(camera => (
+                    <MenuItem value={camera.deviceId} key={camera.deviceId}>{camera.label}</MenuItem>
+                ))}
+            </Select>
+            <Button variant='outlined' onClick={() => {
+                getCameras()
+            }}>
+                Look for cameras
+                </Button><br />
+            <Button variant="outlined" disabled={(model) ? false : true} onClick={() => {
+                if (cameraOn) {
+                    setCameraIsOn(false)
+                    for (let i = 0; i < children.length; i++) {
+                        document.getElementById("liveView").removeChild(children[i]);
+                    }
+                    children.splice(0)
+                    stopStream()
+                } else {
+                    startStream()
+                }
+            }}>
+                {buttonContent(cameraOn)}
+            </Button><br />
+
+        </div>
     }
 
     webcamPredict()

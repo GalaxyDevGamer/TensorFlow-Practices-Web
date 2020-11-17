@@ -1,6 +1,7 @@
 import { Button, CircularProgress, List, ListItem, ListItemText, TextField, Typography } from '@material-ui/core';
 import * as qna from '@tensorflow-models/qna'
 import * as tfjs from '@tensorflow/tfjs'
+import '@tensorflow/tfjs-backend-webgl'
 import { useEffect, useState } from 'react';
 import Page from "./page";
 
@@ -12,61 +13,58 @@ export default function NaturalLanguageQA() {
     const [passage, setPassage] = useState(samplePassage)
     const [question, setQuestion] = useState(sampleQuestion)
     const [answer, setAnswer] = useState([])
-    const [loading, setLoading] = useState(false)
+    const [contentWidth, setContentWidth] = useState(0)
 
     useEffect(() => {
+        setContentWidth(window.innerWidth * 0.9)
         load()
     }, [])
 
     const load = async () => {
-        setModel(await qna.load())
+        tfjs.setBackend('webgl')
+        const Model = await qna.load()
+        console.log(Model)
+        setModel(Model)
     }
 
     async function predictAnswer() {
-        setLoading(true)
         const result = await model.findAnswers(question, passage);
         setAnswer(result)
-        setLoading(false)
     }
 
     function renderAnswer() {
-        if (loading) {
-            return <CircularProgress />
-        } else {
-            if (answer.length == 0) {
-                return <Typography>
-                    Couldn't figure out answer
-                </Typography>
-            }
-            return <List>
-                {answer.map(prediction => (
-                    <ListItem key={prediction.score}>
-                        <ListItemText primary={"Prediction: " + prediction.text + "\nProbability: " + prediction.score} />
-                    </ListItem>
-                ))}
-            </List>
-        }
+        if (!model)
+            return <Typography>Loading model</Typography>
+        if (answer.length == 0)
+            return <Typography>Couldn't figure out answer</Typography>
+        return <List>
+            {answer.map(prediction => (
+                <ListItem key={prediction.score}>
+                    <ListItemText primary={"Prediction: " + prediction.text + "\nProbability: " + prediction.score} />
+                </ListItem>
+            ))}
+        </List>
     }
 
     function renderContent() {
-        return <div>
+        return <div style={{ width: contentWidth, display: 'flex', flexDirection: 'column' }}>
             <Typography variant="h3" paragraph>
                 {`Natural Language Q&A`}
-            </Typography>
+            </Typography><br />
             <Typography paragraph>
                 Finding the answers based on passage
-            </Typography>
+            </Typography><br />
             <Typography>
                 Passage
-            </Typography>
-            <TextField style={{ width: 500 }} rows={5} value={passage} multiline onChange={e => setPassage(e.target.value)} />
+            </Typography><br />
+            <TextField style={{ width: contentWidth }} rows={5} value={passage} multiline onChange={e => setPassage(e.target.value)} /><br />
             <Typography>
                 Question
-            </Typography>
-            <TextField style={{ width: 500 }} value={question} onChange={e => setQuestion(e.target.value)} /><br />
-            <Button variant="outlined" onClick={() => predictAnswer()}>
-                Find Answer
-            </Button>
+            </Typography><br />
+            <TextField style={{ width: contentWidth }} value={question} onChange={e => setQuestion(e.target.value)} /><br />
+            <Button variant="outlined" disabled={(model) ? false : true} onClick={() => predictAnswer()}>
+                {(model) ? 'Find Answer' : <CircularProgress />}
+            </Button><br />
             {renderAnswer()}
         </div>
     }

@@ -1,21 +1,25 @@
 import * as tfjs from '@tensorflow/tfjs'
+import '@tensorflow/tfjs-backend-webgl'
 import * as mobilenet from '@tensorflow-models/mobilenet'
 import * as knnClassifier from '@tensorflow-models/knn-classifier'
 import { useEffect, useState } from 'react';
 import Page from './page';
 import { useStyles } from '../public/assets/styles/styles';
 import { Button, CircularProgress, List, ListItem, ListItemText, Typography } from '@material-ui/core';
+import { isMobile } from 'react-device-detect';
+import { setWasmPaths } from '@tensorflow/tfjs-backend-wasm'
 
 const classifier = knnClassifier.create();
 
 export default function ImageClassification() {
     const classes = useStyles()
     const knnClasses = ['A', 'B', 'C'];
-    const [mobileNet, setModel] = useState(null)
+    const [model, setModel] = useState(null)
     const [imageURI, setImage] = useState('/assets/images/image96.png')
     const [myWindow, setWindow] = useState(null)
     const [imagePredictions, setImageResult] = useState([])
     const [loading, setLoading] = useState(false)
+    const [contentWidth, setContentWidth] = useState(0)
 
     const [webcam, setWebcam] = useState(null)
     const [webcamOn, setWebcamIsOn] = useState(false)
@@ -27,10 +31,14 @@ export default function ImageClassification() {
 
     useEffect(() => {
         setWindow(window)
+        setContentWidth(window.innerWidth * 0.9)
         load()
     }, [])
 
     const load = async () => {
+        setWasmPaths('../node_modules/@tensorflow/tfjs-backend-wasm/dist/tfjs-backend-wasm.wasm')
+        tfjs.setBackend((isMobile) ? 'wasm' : 'webgl')
+        tfjs.ready()
         setModel(await mobilenet.load())
     }
 
@@ -44,7 +52,7 @@ export default function ImageClassification() {
                 img.width = 700
                 img.height = 700
                 img.src = e.target.result
-                setImageResult(await mobileNet.classify(img))
+                setImageResult(await model.classify(img))
                 setLoading(false)
             }
             fileReader.readAsDataURL(event.target.files[0]);
@@ -56,7 +64,7 @@ export default function ImageClassification() {
             if (webcam) {
                 const img = await webcam.capture();
                 if (img) {
-                    setWebcamResult(await mobileNet.classify(img));
+                    setWebcamResult(await model.classify(img));
                     // Dispose the tensor to release the memory.
                     img.dispose();
                 }
@@ -73,7 +81,7 @@ export default function ImageClassification() {
                 const img = await webcamKnn.capture();
                 if (img) {
                     // Get the activation from mobilenet from the webcam.
-                    const activation = mobileNet.infer(img, 'conv_preds');
+                    const activation = model.infer(img, 'conv_preds');
                     // Get the most likely class and confidence from the classifier module.
                     const result = await classifier.predictClass(activation);
                     setWebcamKnnResult(result)
@@ -92,7 +100,7 @@ export default function ImageClassification() {
         if (img) {
             // Get the intermediate activation of MobileNet 'conv_preds' and pass that
             // to the KNN classifier.
-            const activation = mobileNet.infer(img, true);
+            const activation = model.infer(img, true);
             // Pass the intermediate activation to the classifier.
             classifier.addExample(activation, classId);
             // Dispose the tensor to release the memory.
@@ -104,6 +112,11 @@ export default function ImageClassification() {
         if (loading) {
             return <CircularProgress />
         } else {
+            if (!model) {
+                return <Typography>
+                    The model is not ready or supported
+                </Typography>
+            }
             if (imagePredictions.length == 0) {
                 return <Typography>
                     Couldn't detect anything
@@ -111,11 +124,12 @@ export default function ImageClassification() {
             }
             return <List>
                 {imagePredictions.map(prediction => (
-                    <ListItem key={prediction.className}>
+                    <ListItem key={prediction.className} >
                         <ListItemText primary={"Prediction: " + prediction.className + "\nProbability: " + prediction.probability} />
                     </ListItem>
-                ))}
-            </List>
+                ))
+                }
+            </List >
         }
     }
 
@@ -127,26 +141,38 @@ export default function ImageClassification() {
         }
     }
 
+    function buttonContent(flag: boolean) {
+        if (!model)
+            return <CircularProgress />
+        if (flag)
+            return <Typography>Stop</Typography>
+        else
+            return <Typography>Start</Typography>
+    }
+
     function renderContent() {
-        return <div>
-            <Typography variant="h3" >
-                Image Classification powered by Mobile Net
+        return <div style={{ width: contentWidth, display: 'flex', flexDirection: 'column' }}>
+            <Typography variant="h3" paragraph>
+                Image Classification
             </Typography>
-            <div style={{ display: 'flex', flexDirection: 'row' }}>
+            <Typography variant="h6" paragraph>
+                Powered by Mobile Net
+            </Typography>
+            <div style={{ display: 'flex', flexDirection: (isMobile) ? 'column' : 'row' }}>
                 <div>
                     <Typography variant="h6" >
                         Detect from image
                     </Typography>
                     <img src={imageURI} style={{ width: 300, height: 300 }} /><br />
-                    <input type="file" onChange={imagePredict} className="filetype" accept="image/*" id="group_image" /><br />
+                    {(model) ? <input type="file" onChange={imagePredict} className="filetype" accept="image/*" id="group_image" /> : <CircularProgress />}<br /><br />
                     {renderImageResult()}
                 </div>
                 <div>
                     <Typography variant="h6">
-                        Detect from Webcam
+                        Detect from Webcam (Desktop only)
                     </Typography>
                     <video autoPlay playsInline muted id="webcam" width="300" height="300"></video><br />
-                    <Button variant="outlined" color={(webcamOn) ? "secondary" : "primary"} onClick={async () => {
+                    <Button variant="outlined" disabled={(model) ? false : true} color={(webcamOn) ? "secondary" : "primary"} onClick={async () => {
                         if (webcamOn) {
                             await webcam.stop()
                             setWebcamIsOn(false)
@@ -155,7 +181,7 @@ export default function ImageClassification() {
                             setWebcamIsOn(true)
                         }
                     }}>
-                        Webcam
+                        {buttonContent(webcamOn)}
                     </Button>
                     <List>
                         {webcamResult.map(prediction => (
@@ -167,10 +193,10 @@ export default function ImageClassification() {
                 </div>
                 <div>
                     <Typography variant="h6">
-                        Detect from Webcam with KNN Classifier
+                        Detect from Webcam with KNN Classifier (Desktop only)
                     </Typography>
                     <video autoPlay playsInline muted id="webcamKnn" width="300" height="300"></video><br />
-                    <Button variant="outlined" color={(webcamOn) ? "secondary" : "primary"} onClick={async () => {
+                    <Button variant="outlined" disabled={(model) ? false : true} color={(webcamOn) ? "secondary" : "primary"} onClick={async () => {
                         if (webcamKnnOn) {
                             await webcamKnn.stop()
                             setWebcamKnnIsOn(false)
@@ -179,7 +205,7 @@ export default function ImageClassification() {
                             setWebcamKnnIsOn(true)
                         }
                     }}>
-                        Webcam
+                        {buttonContent(webcamKnnOn)}
                     </Button><br />
                     <Button id="class-a" variant="outlined" onClick={() => addExample(0)}>Add A</Button>
                     <Button id="class-b" variant="outlined" onClick={() => addExample(1)}>Add B</Button>
@@ -187,7 +213,7 @@ export default function ImageClassification() {
                     {renderKnnResult()}
                 </div>
             </div>
-        </div>
+        </ div>
     }
 
     webcamPredict()

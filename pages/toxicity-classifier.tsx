@@ -1,4 +1,5 @@
 import * as tfjs from '@tensorflow/tfjs'
+import '@tensorflow/tfjs-backend-webgl'
 import * as toxicity from '@tensorflow-models/toxicity'
 import Page from "./page"
 import { useEffect, useState } from 'react'
@@ -9,15 +10,20 @@ export default function ToxicityClassifier() {
     const [predictions, setPredictions] = useState([])
     const [sentence, setSentence] = useState("")
     const [loading, setLoading] = useState(false)
+    const [contentWidth, setContentWidth] = useState(0)
     // The minimum prediction confidence.
-    const threshold = 0.9
+    const threshold = 0.8
 
     useEffect(() => {
+        setContentWidth(window.innerWidth * 0.9)
         load()
     }, [])
 
     const load = async () => {
-        setModel(await toxicity.load(threshold))
+        await tfjs.setBackend('webgl')
+        const Model = await toxicity.load(threshold, ['identity_attack', 'insult', 'obscene', 'severe_toxicity', 'sexual_explicit', 'threat', 'toxicity'])
+        console.log(Model)
+        setModel(Model)
     }
 
     async function predictToxicity() {
@@ -28,21 +34,21 @@ export default function ToxicityClassifier() {
     }
 
     function renderResult() {
-        if (loading) {
-            return <CircularProgress />
-        } else {
-            return <List>
-                {predictions.map(prediction => (
-                    <ListItem key={prediction.label}>
-                        <ListItemText primary={prediction.label + ": " + prediction.results[0].match} />
-                    </ListItem>
-                ))}
-            </List>
-        }
+        if (!model)
+            return <Typography>Loading model</Typography>
+        if (loading)
+            return <Typography>Classifying</Typography>
+        return <List>
+            {predictions.map(prediction => (
+                <ListItem key={prediction.label}>
+                    <ListItemText primary={prediction.label + ": " + prediction.results[0].match} />
+                </ListItem>
+            ))}
+        </List>
     }
 
     function renderContent() {
-        return <div>
+        return <div style={{ width: contentWidth, display: 'flex', flexDirection: 'column' }}>
             <Typography variant="h3" paragraph>
                 {`Toxicity Classifier`}
             </Typography>
@@ -52,9 +58,9 @@ export default function ToxicityClassifier() {
             <Typography>
                 Sentence
             </Typography>
-            <TextField style={{ width: 500 }} rows={5} value={sentence} multiline onChange={e => setSentence(e.target.value)} /><br />
-            <Button variant="outlined" onClick={() => predictToxicity()}>
-                Identify toxicity
+            <TextField style={{ width: contentWidth }} rows={5} value={sentence} multiline onChange={e => setSentence(e.target.value)} /><br />
+            <Button variant="outlined" disabled={(model) ? false : true} onClick={() => predictToxicity()}>
+                {(model) ? 'Identify toxicity' : <CircularProgress />}
             </Button>
             {renderResult()}
         </div>
