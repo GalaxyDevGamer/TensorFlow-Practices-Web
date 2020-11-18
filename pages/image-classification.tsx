@@ -31,14 +31,14 @@ export default function ImageClassification() {
 
     useEffect(() => {
         setWindow(window)
-        setContentWidth(window.innerWidth * 0.9)
+        setContentWidth(window.innerWidth * 0.85)
         load()
     }, [])
 
     const load = async () => {
-        setWasmPaths('../node_modules/@tensorflow/tfjs-backend-wasm/dist/tfjs-backend-wasm.wasm')
-        tfjs.setBackend((isMobile) ? 'wasm' : 'webgl')
-        tfjs.ready()
+        // setWasmPaths('../node_modules/@tensorflow/tfjs-backend-wasm/dist/tfjs-backend-wasm.wasm')
+        // tfjs.setBackend((isMobile) ? 'wasm' : 'webgl')
+        tfjs.setBackend('webgl')
         setModel(await mobilenet.load())
     }
 

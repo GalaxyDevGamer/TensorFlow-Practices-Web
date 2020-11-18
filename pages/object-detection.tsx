@@ -22,7 +22,9 @@ export default function ObjectDetection() {
     useEffect(() => {
         setSize(window.innerWidth * 0.8)
         setNavigator(window.navigator)
-        setContentWidth(window.innerWidth * 0.9)
+        setContentWidth(window.innerWidth * 0.85)
+        // Call this function again to keep predicting when the browser is ready.
+        window.requestAnimationFrame(cameraPredict);
         load()
     }, [])
 

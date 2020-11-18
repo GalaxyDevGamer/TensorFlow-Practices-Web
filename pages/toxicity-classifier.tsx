@@ -15,7 +15,7 @@ export default function ToxicityClassifier() {
     const threshold = 0.8
 
     useEffect(() => {
-        setContentWidth(window.innerWidth * 0.9)
+        setContentWidth(window.innerWidth * 0.85)
         load()
     }, [])
 

@@ -14,7 +14,7 @@ export default function ImageObjectDetection() {
 
     useEffect(() => {
         setWindow(window)
-        setContentWidth(window.innerWidth * 0.9)
+        setContentWidth(window.innerWidth * 0.85)
         load()
     }, [])
 

@@ -12,7 +12,7 @@ export default function App() {
 
   useEffect(() => {
     setContentWidth(window.innerWidth * 0.8)
-    setSize((isMobile) ? window.innerWidth : window.innerWidth * 0.8 / 3 - 16)
+    setSize((isMobile) ? window.innerWidth * 0.8 : window.innerWidth * 0.8 / 3 - 16)
   }, [])
 
   function renderContent() {
@@ -28,9 +28,9 @@ export default function App() {
         <div style={{ width: contentWidth }}>
           <GridList cols={(isMobile) ? 1 : 3}>
             {menu.map(item => (
-              <ListItem style={{ width: size, height: (isMobile) ? 200 : size / 2, margin: 8 }} key={item.title} button onClick={() => router.push(item.uri)}>
-                <GridListTile style={{ width: size, borderColor: 'gray', borderWidth: 1 }}>
-                  <img width={size} height={(isMobile) ? 200 : size / 2} />
+              <ListItem style={{ width: size, height: 200, margin: 8 }} key={item.title} button onClick={() => router.push(item.uri)}>
+                <GridListTile style={{ width: size - 8, height: 200, borderColor: 'gray', borderWidth: 1 }}>
+                  <img src={'/assets/images/tensorflow-icon.png'} width={size - 8} />
                   <GridListTileBar title={item.title} subtitle={item.description} />
                 </GridListTile>
               </ListItem>

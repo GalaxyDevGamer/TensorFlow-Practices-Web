@@ -16,7 +16,7 @@ export default function NaturalLanguageQA() {
     const [contentWidth, setContentWidth] = useState(0)
 
     useEffect(() => {
-        setContentWidth(window.innerWidth * 0.9)
+        setContentWidth(window.innerWidth * 0.85)
         load()
     }, [])
 

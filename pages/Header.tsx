@@ -1,5 +1,5 @@
 import Head from 'next/head'
-export default function Header({ title = "TensorFlow Practices Web", url = "", thumbnail_url = "" }) {
+export default function Header({ title = "TensorFlow Practices Web", url = "", thumbnail_url = "/assets/images/tensorflow-icon.png" }) {
     return <Head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="initial-scale=1.0, width=device-width" />
